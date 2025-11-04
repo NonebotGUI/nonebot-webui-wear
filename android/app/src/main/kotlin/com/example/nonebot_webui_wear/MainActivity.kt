@@ -1,0 +1,5 @@
+package org.nightwind.nonebot_webui_wear
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
