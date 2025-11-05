@@ -1,7 +1,7 @@
 // import 'package:nonebot_webui_wear/ui/manage/env.dart';
 import 'package:nonebot_webui_wear/ui/manage/adapter.dart';
 import 'package:nonebot_webui_wear/ui/manage/driver.dart';
-// import 'package:nonebot_webui_wear/ui/manage/manage_plugin.dart';
+import 'package:nonebot_webui_wear/ui/manage/manage_plugin.dart';
 import 'package:nonebot_webui_wear/ui/manage/plugin.dart';
 import 'package:flutter/material.dart';
 
@@ -92,20 +92,21 @@ class _HomeScreenState extends State<ManageList> {
                     title: Text('驱动器商店', style: TextStyle(color: Colors.white)),
                   ),
                 ),
-                const Divider(),
-                // InkWell(
-                //   onTap: () {
-                //     Navigator.push(
-                //       context,
-                //       MaterialPageRoute(
-                //         builder: (context) {
-                //           return const ManagePlugin();
-                //         },
-                //       ),
-                //     );
-                //   },
-                //   child: const ListTile(title: Text('插件管理')),
-                // ),
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return const ManagePlugin();
+                        },
+                      ),
+                    );
+                  },
+                  child: const ListTile(
+                    title: Text('插件管理', style: TextStyle(color: Colors.white)),
+                  ),
+                ),
                 // const Divider(),
                 // InkWell(
                 //   onTap: () {
