@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:nonebot_webui_wear/ui/manage/list.dart';
+import 'package:nonebot_webui_wear/ui/manage/plugin.dart';
 import 'package:nonebot_webui_wear/utils/global.dart';
 
 class ManageBot extends StatefulWidget {
@@ -196,6 +198,20 @@ class _BotActionsPage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => const _BotInfoPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildActionTile(
+                    context: context,
+                    icon: Icons.list_rounded,
+                    title: '更多操作',
+                    color: Colors.teal,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ManageList(),
                         ),
                       );
                     },

@@ -3,18 +3,27 @@ import 'dart:convert';
 import 'package:nonebot_webui_wear/utils/global.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:nonebot_webui_wear/assets/my_flutter_app_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class PluginStore extends StatefulWidget {
   const PluginStore({super.key});
 
   @override
-  State<PluginStore> createState() => _MyHomePageState();
+  State<PluginStore> createState() => _PluginStoreState();
 }
 
-class _MyHomePageState extends State<PluginStore> {
+class _PluginStoreState extends State<PluginStore> {
   final TextEditingController _searchController = TextEditingController();
+
+  List<Map<String, dynamic>> data = [];
+  List<Map<String, dynamic>> search = [];
+  bool _isLoading = true;
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+  }
 
   @override
   void dispose() {
@@ -22,42 +31,38 @@ class _MyHomePageState extends State<PluginStore> {
     super.dispose();
   }
 
-  Future<void> _launchUrl(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+  Future<void> fetchData() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://registry.nonebot.dev/plugins.json'),
+      );
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        setState(() {
+          String decodedBody = utf8.decode(response.bodyBytes);
+          final List<dynamic> jsonData = json.decode(decodedBody);
+          data = jsonData.map((item) => item as Map<String, dynamic>).toList();
+          search = data;
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load data');
+      }
+    } catch (e) {
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('无法打开链接')));
+        ).showSnackBar(const SnackBar(content: Text('加载插件列表失败')));
       }
-    }
-  }
-
-  //初始化json列表
-  List<Map<String, dynamic>> data = [];
-  List<Map<String, dynamic>> search = [];
-
-  Future<void> fetchData() async {
-    final response = await http.get(
-      Uri.parse('https://registry.nonebot.dev/plugins.json'),
-    );
-    if (response.statusCode == 200) {
-      setState(() {
-        String decodedBody = utf8.decode(response.bodyBytes);
-        final List<dynamic> jsonData = json.decode(decodedBody);
-        data = jsonData.map((item) => item as Map<String, dynamic>).toList();
-        search = data;
-      });
-    } else {
-      throw Exception('Failed to load data');
     }
   }
 
   void _searchAdapters(value) {
     setState(() {
-      //根据名字，描述等搜索
       search = data.where((adapter) {
-        //果然是个人都喜欢堆起来
         return adapter['name'].toLowerCase().contains(value.toLowerCase()) ||
             adapter['desc'].toLowerCase().contains(value.toLowerCase()) ||
             adapter['module_name'].toLowerCase().contains(
@@ -68,271 +73,386 @@ class _MyHomePageState extends State<PluginStore> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    fetchData();
+  Widget _buildTopBar() {
+    if (_isSearching) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+        child: SizedBox(
+          height: 40,
+          child: TextField(
+            controller: _searchController,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: '搜索...',
+              hintStyle: const TextStyle(color: Colors.white70),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 0,
+                horizontal: 16,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: Colors.white38),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: Colors.white38),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: Colors.white),
+              ),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchController.clear();
+                    _searchAdapters('');
+                  });
+                },
+              ),
+            ),
+            onChanged: _searchAdapters,
+          ),
+        ),
+      );
+    } else {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          const Text('商店', style: TextStyle(color: Colors.white, fontSize: 18)),
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                _isSearching = true;
+              });
+            },
+          ),
+        ],
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(50),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(5, 5, 0, 0),
-          child: TextField(
-            controller: _searchController,
-            decoration: const InputDecoration(hintText: ' 搜索插件...'),
-            onChanged: _searchAdapters,
-          ),
-        ),
-      ),
-      body: data.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [Image.asset('lib/assets/loading.gif')],
-              ),
-            )
-          : Container(
-              margin: const EdgeInsets.fromLTRB(32, 20, 32, 12),
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 3 / 1,
-                ),
-                itemCount: search.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final plugins = search[index];
-                  return Card(
-                    child: InkWell(
-                      onTap: () {},
-                      child: Stack(
-                        children: <Widget>[
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  plugins['name'],
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  plugins['module_name'],
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  plugins['desc'],
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ],
-                            ),
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          _buildTopBar(),
+          Expanded(
+            child: _isLoading
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color.fromRGBO(147, 112, 219, 1),
                           ),
-                          Positioned(
-                            left: 8,
-                            bottom: 8,
-                            child: Text(
-                              'By ${plugins['author']}',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Row(
-                              children: <Widget>[
-                                IconButton(
-                                  onPressed: () {
-                                    Map data = {
-                                      'id': gOnOpen,
-                                      'name': plugins['module_name'],
-                                    };
-                                    String dataStr = jsonEncode(data);
-                                    socket.sink.add(
-                                      'plugin/install?data=$dataStr&token=${Config.token}',
-                                    );
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return const InstallingBot();
-                                      },
-                                    );
-                                  },
-                                  tooltip: '安装插件',
-                                  icon: const Icon(Icons.download_rounded),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: () {},
-                                  tooltip: '查看主页',
-                                  icon: const Icon(MyFlutterApp.github),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  tooltip: '查看商店检查结果',
-                                  icon: const Icon(Icons.info_rounded),
-                                  onPressed: () => _launchUrl(
-                                    'https://registry.nonebot.dev/plugin/${plugins['project_link']}:${plugins['module_name']}',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '加载中...',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ],
                     ),
-                  );
-                },
-              ),
-            ),
+                  )
+                : ListView.builder(
+                    itemCount: search.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final plugin = search[index];
+                      return Card(
+                        color: Colors.grey[900],
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 8.0,
+                          vertical: 4.0,
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            plugin['name'],
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            plugin['desc'],
+                            style: const TextStyle(color: Colors.white70),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    _PluginDetailPage(plugin: plugin),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class InstallingBot extends StatefulWidget {
-  const InstallingBot({super.key});
-
-  @override
-  _InstallingBotState createState() => _InstallingBotState();
-}
-
-class _InstallingBotState extends State<InstallingBot> {
-  String _log = '';
-  List<String> _logList = [];
-  @override
-  void initState() {
-    super.initState();
-    broadcastStream?.listen((event) {
-      String? msg = event;
-      if (msg != null) {
-        Map msgJson = jsonDecode(msg);
-        String type = msgJson['type'];
-        switch (type) {
-          case 'pluginInstallLog':
-            String data = msgJson['data'];
-            setState(() {
-              _logList.add(data);
-              _log = _logList.join('');
-            });
-            break;
-          case 'installPluginStatus':
-            String data = msgJson['data'];
-            if (data == 'done') {
-              Future.delayed(const Duration(seconds: 15), () {
-                _log = '';
-                Navigator.of(context).pop();
-              });
-            }
-            break;
-        }
-      }
-    }, cancelOnError: false);
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
+class _PluginDetailPage extends StatelessWidget {
+  final Map<String, dynamic> plugin;
+  const _PluginDetailPage({required this.plugin});
 
   @override
   Widget build(BuildContext context) {
-    dynamic size = MediaQuery.of(context).size;
-    double height = size.height;
-    double width = size.width;
-    return Center(
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5.0)),
-        child: Container(
-          width: (height > width) ? width * 0.9 : width * 0.6,
-          height: (height > width) ? height * 0.8 : height * 0.8,
-          margin: const EdgeInsets.all(16.0),
-          child: Column(
-            children: <Widget>[
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    '正在安装插件',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
                 ),
+                onPressed: () => Navigator.of(context).pop(),
               ),
-              Expanded(
-                flex: 14,
-                child: Card(
-                  color: const Color.fromARGB(255, 31, 28, 28),
-                  child: Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    padding: const EdgeInsets.all(8.0),
-                    child: SingleChildScrollView(
-                      child: Text(
-                        _log,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'JetBrainsMono',
-                        ),
+              const Text(
+                '详情',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.black,
+                ),
+                onPressed: () {},
+              ),
+            ],
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "名称",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ),
-              ),
-              const Divider(color: Colors.grey),
-              Expanded(
-                flex: 1,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: <Widget>[
-                    ElevatedButton(
-                      onPressed: () {
-                        _log = '';
-                        _logList.clear();
-                        Navigator.of(context).pop();
-                      },
-                      style: ButtonStyle(
-                        backgroundColor: MaterialStateProperty.all(
-                          Config.theme['color'] == 'light' ||
-                                  Config.theme['color'] == 'default'
-                              ? const Color.fromRGBO(234, 82, 82, 1)
-                              : const Color.fromRGBO(147, 112, 219, 1),
-                        ),
-                        shape: MaterialStateProperty.all(
-                          const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(10.0),
-                            ),
-                          ),
-                        ),
-                        minimumSize: MaterialStateProperty.all(
-                          const Size(100, 40),
-                        ),
+                    const SizedBox(height: 8),
+                    Text(
+                      plugin['name'],
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "模块名",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      child: const Text(
-                        '关闭',
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      plugin['module_name'],
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "作者",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      plugin['author'],
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "描述",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      plugin['desc'],
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 24),
+                    Center(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.download_rounded),
+                        label: const Text('安装'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          Map data = {
+                            'id': gOnOpen,
+                            'name': plugin['module_name'],
+                          };
+                          String dataStr = jsonEncode(data);
+                          socket.sink.add(
+                            'plugin/install?data=$dataStr&token=${Config.token}',
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const _InstallingPluginPage(),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InstallingPluginPage extends StatefulWidget {
+  const _InstallingPluginPage();
+
+  @override
+  State<_InstallingPluginPage> createState() => _InstallingPluginPageState();
+}
+
+class _InstallingPluginPageState extends State<_InstallingPluginPage> {
+  final List<String> _logLines = [];
+  final ScrollController _scrollController = ScrollController();
+  StreamSubscription? _broadcastSubscription;
+  bool _isDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _broadcastSubscription = broadcastStream?.listen((event) {
+      if (!mounted) return;
+      try {
+        final msgJson = jsonDecode(event);
+        final type = msgJson['type'];
+        final data = msgJson['data'];
+
+        if (type == 'pluginInstallLog') {
+          setState(() {
+            _logLines.add(data);
+          });
+          _scrollToBottom();
+        } else if (type == 'installPluginStatus' && data == 'done') {
+          setState(() {
+            _logLines.add("\n🎉 安装完成!");
+            _isDone = true;
+          });
+          _scrollToBottom();
+        }
+      } catch (e) {}
+    });
+  }
+
+  @override
+  void dispose() {
+    _broadcastSubscription?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Center(
+                child: Text(
+                  _isDone ? '安装完成' : '正在安装插件...',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                color: const Color.fromARGB(255, 18, 18, 18),
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Text(
+                    _logLines.join(),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontFamily: 'JetBrainsMono',
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (_isDone)
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('完成'),
+                ),
+              ),
+          ],
         ),
       ),
     );
