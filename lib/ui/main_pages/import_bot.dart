@@ -143,7 +143,7 @@ class _Step2ImportPathState extends State<_Step2ImportPath> {
       'cmd': '',
     };
     String data = jsonEncode(res);
-    socket?.sink.add('bot/import?data=$data&token=${Config.token}');
+    socket.sink.add('bot/import?data=$data&token=${Config.token}');
 
     ScaffoldMessenger.of(
       context,

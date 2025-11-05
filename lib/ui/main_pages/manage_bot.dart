@@ -146,7 +146,7 @@ class _BotActionsPage extends StatelessWidget {
                       if (isRunning) {
                         _showSnackBar(context, 'Bot已经在运行了！');
                       } else {
-                        socket?.sink.add(
+                        socket.sink.add(
                           'bot/run/${Data.botInfo['id']}&token=${Config.token}',
                         );
                         Navigator.pop(context);
@@ -162,7 +162,7 @@ class _BotActionsPage extends StatelessWidget {
                       if (!isRunning) {
                         _showSnackBar(context, 'Bot未运行！');
                       } else {
-                        socket?.sink.add(
+                        socket.sink.add(
                           'bot/stop/${Data.botInfo['id']}&token=${Config.token}',
                         );
                         Navigator.pop(context);
@@ -436,7 +436,7 @@ class _DeleteConfirmationPage extends StatelessWidget {
                   minimumSize: const Size(double.infinity, 40),
                 ),
                 onPressed: () {
-                  socket?.sink.add(
+                  socket.sink.add(
                     'bot/remove/${Data.botInfo['id']}&token=${Config.token}',
                   );
                   gOnOpen = '';
@@ -454,7 +454,7 @@ class _DeleteConfirmationPage extends StatelessWidget {
                   minimumSize: const Size(double.infinity, 40),
                 ),
                 onPressed: () {
-                  socket?.sink.add(
+                  socket.sink.add(
                     'bot/delete/${Data.botInfo['id']}&token=${Config.token}',
                   );
                   gOnOpen = '';

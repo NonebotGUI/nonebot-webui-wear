@@ -407,7 +407,7 @@ class _Step4AdaptersState extends State<Step4Adapters> {
       "adapters": selectedAdapters,
     };
     String dataJson = jsonEncode(data);
-    socket?.sink.add('bot/create?data=$dataJson&token=${Config.token}');
+    socket.sink.add('bot/create?data=$dataJson&token=${Config.token}');
 
     Navigator.pushAndRemoveUntil(
       context,
