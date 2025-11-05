@@ -1,28 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:nonebot_webui_wear/main.dart';
+import 'package:marquee/marquee.dart';
 import 'package:nonebot_webui_wear/utils/global.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class ManagePlugin extends StatefulWidget {
   const ManagePlugin({super.key});
 
   @override
-  State<ManagePlugin> createState() => _HomeScreenState();
+  State<ManagePlugin> createState() => _ManagePluginState();
 }
 
-class _HomeScreenState extends State<ManagePlugin> {
+class _ManagePluginState extends State<ManagePlugin> {
+  final PageController _pageController = PageController();
   int _selectedIndex = 0;
   Timer? _timer;
-  List pluginList = [];
-  List disabledPluginList = [];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  List _pluginList = [];
+  List _disabledPluginList = [];
 
   @override
   void initState() {
@@ -32,18 +26,19 @@ class _HomeScreenState extends State<ManagePlugin> {
       String msg = message;
       String type = jsonDecode(msg)['type'];
       if (type == 'pluginList') {
-        pluginList = jsonDecode(msg)['data'];
+        _pluginList = jsonDecode(msg)['data'];
       }
       if (type == 'disabledPluginList') {
-        disabledPluginList = jsonDecode(msg)['data'];
+        _disabledPluginList = jsonDecode(msg)['data'];
       }
     });
   }
 
   @override
   void dispose() {
-    super.dispose();
     _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
   }
 
   getData() async {
@@ -61,177 +56,364 @@ class _HomeScreenState extends State<ManagePlugin> {
     });
   }
 
+  Widget _buildPageIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildIndicatorItem(0, '已启用'),
+          const SizedBox(width: 16),
+          _buildIndicatorItem(1, '已禁用'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIndicatorItem(int index, String text) {
+    bool isSelected = _selectedIndex == index;
+    return GestureDetector(
+      onTap: () {
+        _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      },
+      child: Column(
+        children: [
+          Text(
+            text,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            height: 2,
+            width: 40,
+            color: isSelected ? Colors.blue : Colors.transparent,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        margin: const EdgeInsets.fromLTRB(32, 20, 32, 12),
-        child: Column(
-          children: <Widget>[
-            _selectedIndex == 0
-                ? pluginList.isEmpty
-                      ? const Expanded(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('还没有安装任何插件'),
-                                SizedBox(height: 3),
-                                Text('你可以前往插件商店进行安装'),
-                                SizedBox(height: 3),
-                              ],
-                            ),
-                          ),
-                        )
-                      : Expanded(
-                          child: ListView.separated(
-                            itemCount: pluginList.length,
-                            separatorBuilder:
-                                (BuildContext context, int index) {
-                                  return const Divider();
-                                },
-                            itemBuilder: (BuildContext context, int index) {
-                              if (pluginList[index].isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-                              return ListTile(
-                                title: Text(pluginList[index]),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons
-                                            .do_not_disturb_on_total_silence_rounded,
-                                      ),
-                                      tooltip: '禁用',
-                                      onPressed: () {
-                                        Map data = {
-                                          'name': pluginList[index],
-                                          'id': Data.botInfo['id'],
-                                        };
-                                        String dataStr = jsonEncode(data);
-                                        setState(() {
-                                          socket.sink.add(
-                                            'plugin/disable?data=$dataStr&token=${Config.token}',
-                                          );
-                                        });
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete),
-                                      tooltip: '卸载',
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return AlertDialog(
-                                              title: const Text('确定卸载插件'),
-                                              content: Text(
-                                                '你确定要卸载插件 ${pluginList[index]} 吗？',
-                                              ),
-                                              actions: <Widget>[
-                                                TextButton(
-                                                  onPressed: () {
-                                                    Navigator.of(context).pop();
-                                                  },
-                                                  child: const Text('取消'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () {
-                                                    _uninstall(
-                                                      pluginList[index],
-                                                    );
-                                                    Navigator.of(context).pop();
-                                                    ScaffoldMessenger.of(
-                                                      context,
-                                                    ).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text(
-                                                          '卸载请求已发送',
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                  child: const Text('确定'),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        )
-                : disabledPluginList.isEmpty
-                ? const Expanded(child: Center(child: Text('空空如也...')))
-                : Expanded(
-                    child: ListView.separated(
-                      itemCount: disabledPluginList.length,
-                      separatorBuilder: (BuildContext context, int index) {
-                        return const Divider();
-                      },
-                      itemBuilder: (BuildContext context, int index) {
-                        if (disabledPluginList[index].isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        return ListTile(
-                          title: Text(disabledPluginList[index]),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.open_in_browser_rounded),
-                                tooltip: '启用',
-                                onPressed: () {
-                                  Map data = {
-                                    'name': disabledPluginList[index],
-                                    'id': Data.botInfo['id'],
-                                  };
-                                  String dataStr = jsonEncode(data);
-                                  setState(() {
-                                    socket.sink.add(
-                                      'plugin/enable?data=$dataStr&token=${Config.token}',
-                                    );
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.open_in_browser_rounded),
-            label: '已启用的插件',
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              const Text(
+                '插件管理',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              // Placeholder for alignment
+              const IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.black,
+                ),
+                onPressed: null,
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.do_not_disturb_on_total_silence_rounded),
-            label: '已禁用的插件',
+          _buildPageIndicator(),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              children: [
+                (_pluginList.isEmpty)
+                    ? const Center(
+                        child: Text(
+                          '空空如也......',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _pluginList.length,
+                        itemBuilder: (context, index) {
+                          final pluginName = _pluginList[index];
+                          if (pluginName.isEmpty)
+                            return const SizedBox.shrink();
+                          return Card(
+                            color: Colors.grey[900],
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: ListTile(
+                              title: SizedBox(
+                                height: 20.0,
+                                child: Marquee(
+                                  text: pluginName,
+                                  style: const TextStyle(color: Colors.white),
+                                  scrollAxis: Axis.horizontal,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  blankSpace: 20.0,
+                                  velocity: 50.0,
+                                  pauseAfterRound: const Duration(seconds: 1),
+                                  startPadding: 10.0,
+                                  accelerationDuration: const Duration(
+                                    seconds: 1,
+                                  ),
+                                  accelerationCurve: Curves.linear,
+                                  decelerationDuration: const Duration(
+                                    milliseconds: 500,
+                                  ),
+                                  decelerationCurve: Curves.easeOut,
+                                ),
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => _PluginActionPage(
+                                      pluginName: pluginName,
+                                      isEnabled: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                (_disabledPluginList.isEmpty)
+                    ? const Center(
+                        child: Text(
+                          '空空如也......',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _disabledPluginList.length,
+                        itemBuilder: (context, index) {
+                          final pluginName = _disabledPluginList[index];
+                          if (pluginName.isEmpty)
+                            return const SizedBox.shrink();
+                          return Card(
+                            color: Colors.grey[900],
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: ListTile(
+                              title: SizedBox(
+                                height: 20.0,
+                                child: Marquee(
+                                  text: pluginName,
+                                  style: const TextStyle(color: Colors.white),
+                                  scrollAxis: Axis.horizontal,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  blankSpace: 20.0,
+                                  velocity: 50.0,
+                                  pauseAfterRound: const Duration(seconds: 1),
+                                  startPadding: 10.0,
+                                  accelerationDuration: const Duration(
+                                    seconds: 1,
+                                  ),
+                                  accelerationCurve: Curves.linear,
+                                  decelerationDuration: const Duration(
+                                    milliseconds: 500,
+                                  ),
+                                  decelerationCurve: Curves.easeOut,
+                                ),
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => _PluginActionPage(
+                                      pluginName: pluginName,
+                                      isEnabled: false,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ],
+            ),
           ),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: (Config.theme['color'] == 'light')
-            ? const Color.fromRGBO(234, 82, 82, 1)
-            : const Color.fromRGBO(147, 112, 219, 1),
-        onTap: _onItemTapped,
       ),
     );
   }
 }
 
-void _uninstall(name) async {
-  Map data = {'name': name, 'id': Data.botInfo['id']};
-  String dataStr = jsonEncode(data);
-  socket.sink.add('plugin/uninstall?data=$dataStr&token=${Config.token}');
+class _PluginActionPage extends StatelessWidget {
+  final String pluginName;
+  final bool isEnabled;
+
+  const _PluginActionPage({required this.pluginName, required this.isEnabled});
+
+  void _togglePlugin(BuildContext context) {
+    final action = isEnabled ? 'disable' : 'enable';
+    Map data = {'name': pluginName, 'id': gOnOpen};
+    String dataStr = jsonEncode(data);
+    socket.sink.add('plugin/$action?data=$dataStr&token=${Config.token}');
+    Navigator.pop(context);
+  }
+
+  void _uninstallPlugin(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _UninstallConfirmPage(pluginName: pluginName),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              Text(
+                "操作",
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              const IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.black,
+                ),
+                onPressed: null,
+              ),
+            ],
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      pluginName,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      icon: Icon(
+                        isEnabled
+                            ? Icons.do_not_disturb_on_total_silence_rounded
+                            : Icons.play_circle_outline_rounded,
+                      ),
+                      label: Text(isEnabled ? '禁用' : '启用'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isEnabled
+                            ? Colors.orange
+                            : Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () => _togglePlugin(context),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      label: const Text('卸载'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () => _uninstallPlugin(context),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UninstallConfirmPage extends StatelessWidget {
+  final String pluginName;
+  const _UninstallConfirmPage({required this.pluginName});
+
+  void _confirmUninstall(BuildContext context) {
+    Map data = {'name': pluginName, 'id': gOnOpen};
+    String dataStr = jsonEncode(data);
+    socket.sink.add('plugin/uninstall?data=$dataStr&token=${Config.token}');
+    // Pop twice to go back to the list page
+    int count = 0;
+    Navigator.of(context).popUntil((_) => count++ >= 2);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '确定要卸载插件 "$pluginName" 吗？',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => _confirmUninstall(context),
+                child: const Text('确定'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white54),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('取消', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
