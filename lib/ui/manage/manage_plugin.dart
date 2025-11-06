@@ -343,16 +343,18 @@ class _PluginActionPage extends StatelessWidget {
                       onPressed: () => _togglePlugin(context),
                     ),
                     const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      label: const Text('卸载'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () => _uninstallPlugin(context),
-                    ),
+                    isEnabled
+                        ? ElevatedButton.icon(
+                            icon: const Icon(Icons.delete_forever_rounded),
+                            label: const Text('卸载插件'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: () => _uninstallPlugin(context),
+                          )
+                        : const SizedBox.shrink(),
                   ],
                 ),
               ),
@@ -369,7 +371,7 @@ class _UninstallConfirmPage extends StatelessWidget {
   const _UninstallConfirmPage({required this.pluginName});
 
   void _confirmUninstall(BuildContext context) {
-    Map data = {'name': pluginName, 'id': gOnOpen};
+    Map data = {'name': pluginName, 'id': Data.botInfo['id']};
     String dataStr = jsonEncode(data);
     socket.sink.add('plugin/uninstall?data=$dataStr&token=${Config.token}');
     // Pop twice to go back to the list page
