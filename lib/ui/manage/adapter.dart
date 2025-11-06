@@ -444,12 +444,15 @@ class _InstallingAdapterPageState extends State<_InstallingAdapterPage> {
                 color: const Color.fromARGB(255, 18, 18, 18),
                 child: SingleChildScrollView(
                   controller: _scrollController,
-                  child: Text(
-                    _logLines.join(),
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontFamily: 'JetBrainsMono',
-                      fontSize: 10,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      _logLines.join(),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 10,
+                      ),
                     ),
                   ),
                 ),
