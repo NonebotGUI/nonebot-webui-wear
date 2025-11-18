@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nonebot_webui_wear/ui/main_pages/about.dart';
 import 'package:nonebot_webui_wear/ui/main_pages/createbot.dart';
 import 'package:nonebot_webui_wear/ui/main_pages/import_bot.dart';
 import 'package:nonebot_webui_wear/ui/main_pages/settings.dart';
@@ -25,7 +24,7 @@ class _HomeScreenState extends State<MainPageMobile>
   final PageController _pageController = PageController();
   int runningCount = 0;
 
-  final List<String> _titles = ['主页', 'Bot列表', '控制台', '创建', '导入', '设置', '关于'];
+  final List<String> _titles = ['主页', 'Bot列表', '控制台', '创建', '导入', '设置'];
 
   @override
   void initState() {
@@ -281,8 +280,6 @@ class _HomeScreenState extends State<MainPageMobile>
                   const ImportBot(),
                   // 设置
                   const Settings(),
-                  // 关于
-                  const About(),
                 ],
               ),
             ),

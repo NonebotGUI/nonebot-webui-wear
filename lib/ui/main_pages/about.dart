@@ -16,24 +16,66 @@ class _MoreState extends State<About> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
-        children: <Widget>[
-          const Center(
-            child: Text(
-              "NoneBot WebUI Wear",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 14,
+
+      body: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
               ),
+              const Text(
+                '关于',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.black,
+                ),
+                onPressed: () {},
+              ),
+            ],
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8.0,
+                vertical: 16.0,
+              ),
+              children: <Widget>[
+                const Center(
+                  child: Text(
+                    "NoneBot WebUI Wear",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildInfoTile('软件版本', version),
+                _buildInfoTile(
+                  'Agent 版本',
+                  Data.agentVersion['version'] ?? 'N/A',
+                ),
+                _buildInfoTile(
+                  'Python 版本',
+                  Data.agentVersion['python'] ?? 'N/A',
+                ),
+                _buildInfoTile(
+                  'nb-cli 版本',
+                  Data.agentVersion['nbcli'] ?? 'N/A',
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-          _buildInfoTile('软件版本', version),
-          _buildInfoTile('Agent 版本', Data.agentVersion['version'] ?? 'N/A'),
-          _buildInfoTile('Python 版本', Data.agentVersion['python'] ?? 'N/A'),
-          _buildInfoTile('nb-cli 版本', Data.agentVersion['nbcli'] ?? 'N/A'),
         ],
       ),
     );

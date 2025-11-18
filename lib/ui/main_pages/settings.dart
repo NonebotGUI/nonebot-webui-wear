@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nonebot_webui_wear/ui/main_pages/about.dart';
 import 'package:nonebot_webui_wear/utils/core.dart';
 import 'package:nonebot_webui_wear/utils/global.dart';
 import 'package:http/http.dart' as http;
@@ -26,12 +27,15 @@ class Settings extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.palette_outlined, color: Colors.white),
-            title: const Text('主题设置', style: TextStyle(color: Colors.white)),
+            leading: const Icon(
+              Icons.info_outline_rounded,
+              color: Colors.white,
+            ),
+            title: const Text('关于', style: TextStyle(color: Colors.white)),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const _ThemeSettingsPage()),
+                MaterialPageRoute(builder: (_) => const About()),
               );
             },
           ),
@@ -216,64 +220,6 @@ class _ConnectionSettingsPageState extends State<_ConnectionSettingsPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ThemeSettingsPage extends StatefulWidget {
-  const _ThemeSettingsPage();
-
-  @override
-  State<_ThemeSettingsPage> createState() => _ThemeSettingsPageState();
-}
-
-class _ThemeSettingsPageState extends State<_ThemeSettingsPage> {
-  late int _autoWrap;
-
-  @override
-  void initState() {
-    super.initState();
-    _autoWrap = Config.autoWrap;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(bottom: 24.0),
-            child: Center(
-              child: Text(
-                '主题设置',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          SwitchListTile(
-            title: const Text(
-              'Bot终端自动换行',
-              style: TextStyle(color: Colors.white),
-            ),
-            value: _autoWrap == 1,
-            onChanged: (bool value) async {
-              final int intValue = value ? 1 : 0;
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setInt('autoWrap', intValue);
-              setState(() {
-                Config.autoWrap = intValue;
-                _autoWrap = intValue;
-              });
-            },
-          ),
-        ],
       ),
     );
   }
