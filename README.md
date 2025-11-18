@@ -24,7 +24,7 @@ _✨ NoneBot WebUI Client for WearOS ✨_
 
 ## 📖 介绍
 
-NoneBot WebUI 的移动客户端 
+NoneBot WebUI 的手表客户端实现 
 
 ## ❓ 为什么要做这种东西
 
