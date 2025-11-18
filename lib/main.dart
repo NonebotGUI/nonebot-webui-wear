@@ -8,7 +8,7 @@ import 'package:flutter/services.dart' show rootBundle;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  version = '0.1.2';
+  version = '0.1.3';
   debug = false;
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   final String? getHost = prefs.getString('host');
