@@ -1,4 +1,3 @@
-# 🌈 Changelog 2025.11.06 🌈
+# 🌈 Changelog 2025.11.21 🌈
 by @XTxiaoting14332
-修复插件管理的bug
-优化安装日志显示
+新增鸣谢列表

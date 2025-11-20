@@ -8,7 +8,7 @@ import 'package:flutter/services.dart' show rootBundle;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  version = '0.1.3';
+  version = '0.1.4';
   debug = false;
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   final String? getHost = prefs.getString('host');
@@ -66,7 +66,7 @@ class _ConfigPageState extends State<ConfigPage> {
   final myController = TextEditingController();
   final portController = TextEditingController();
   final tokenController = TextEditingController();
-  int _selectedProtocol = 0; // 0 for ws, 1 for wss
+  int _selectedProtocol = 0;
   String fileContent = '';
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   Future<void> _register() async {
@@ -103,37 +103,46 @@ class _ConfigPageState extends State<ConfigPage> {
     required Widget child,
     bool isLastPage = false,
   }) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(8.0),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight - 16.0,
             ),
-            const SizedBox(height: 8),
-            child,
-            const SizedBox(height: 8),
-            if (!isLastPage)
-              ElevatedButton(
-                onPressed: _nextPage,
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  padding: const EdgeInsets.all(12),
-                ),
-                child: const Icon(Icons.chevron_right),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  child,
+                  const SizedBox(height: 8),
+                  if (!isLastPage)
+                    ElevatedButton(
+                      onPressed: _nextPage,
+                      style: ElevatedButton.styleFrom(
+                        shape: const CircleBorder(),
+                        padding: const EdgeInsets.all(12),
+                      ),
+                      child: const Icon(Icons.chevron_right),
+                    ),
+                ],
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
