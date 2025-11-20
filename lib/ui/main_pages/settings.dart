@@ -4,6 +4,7 @@ import 'package:nonebot_webui_wear/utils/core.dart';
 import 'package:nonebot_webui_wear/utils/global.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nonebot_webui_wear/ui/main_pages/acknowledgements.dart';
 
 class Settings extends StatelessWidget {
   const Settings({super.key});
@@ -23,6 +24,16 @@ class Settings extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (_) => const _ConnectionSettingsPage(),
                 ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.group_rounded, color: Colors.white),
+            title: const Text('鸣谢', style: TextStyle(color: Colors.white)),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AcknowledgementsPage()),
               );
             },
           ),
